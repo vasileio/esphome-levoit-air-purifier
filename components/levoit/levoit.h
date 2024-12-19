@@ -11,7 +11,7 @@
 namespace esphome {
 namespace levoit {
 
-enum class LevoitDeviceModel : uint8_t { NONE, CORE_300S, CORE_400S };
+enum class LevoitDeviceModel : uint8_t { NONE, CORE_200S, CORE_300S, CORE_400S };
 
 enum class LevoitPacketType : uint8_t { SEND_MESSAGE = 0x22, ACK_MESSAGE = 0x12, ERROR = 0x52 };
 
@@ -29,7 +29,8 @@ enum class LevoitPayloadType : uint32_t {
   RESET_FILTER = 0x01E4A5,
   TIMER_STATUS = 0x0165A2,
   SET_TIMER_TIME = 0x0164A2,
-  TIMER_START_OR_CLEAR = 0x0166A2
+  TIMER_START_OR_CLEAR = 0x0166A2,
+  SET_NIGHTLIGHT = 0x0103A0
 };
 
 struct LevoitListener {
@@ -49,6 +50,11 @@ static const PayloadTypeOverrideMap MODEL_SPECIFIC_PAYLOAD_TYPES = {
     {LevoitDeviceModel::CORE_400S,
      {
          {LevoitPayloadType::STATUS_REQUEST, 0x01b140}, {LevoitPayloadType::STATUS_RESPONSE, 0x01b040},
+         // ... add other model-specific overrides here ...
+     }},
+     {LevoitDeviceModel::CORE_200S,
+     {
+         {LevoitPayloadType::STATUS_REQUEST, 0x016140}, {LevoitPayloadType::STATUS_RESPONSE, 0x016140},
          // ... add other model-specific overrides here ...
      }},
     // ... add other device models and their overrides here ...

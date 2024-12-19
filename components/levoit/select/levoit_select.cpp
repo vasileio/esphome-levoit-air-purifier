@@ -27,6 +27,15 @@ void LevoitSelect::setup() {
                                        } else if (purifierAutoMode == 0x02) {
                                          this->publish_state("Efficient");
                                        }
+                                     } else if (this->purpose_ == LevoitSelectPurpose::PURIFIER_NIGHTLIGHT_MODE) {
+                                       uint8_t purifierNightlightMode = payloadBuf[12];
+                                       if (purifierNightlightMode == 0x00) {
+                                         this->publish_state("Off");
+                                       } else if (purifierNightlightMode == 0x32) {
+                                         this->publish_state("Low");
+                                       } else if (purifierNightlightMode == 0x64) {
+                                         this->publish_state("High");
+                                       }
                                      }
                                    });
 }
@@ -73,6 +82,20 @@ void LevoitSelect::control(const std::string &value) {
       this->parent_->send_command(LevoitCommand{.payloadType = LevoitPayloadType::SET_FAN_AUTO_MODE,
                                                 .packetType = LevoitPacketType::SEND_MESSAGE,
                                                 .payload = {0x00, 0x02, 0xEC, 0x04}});
+    }
+  } else if (this->purpose_ == LevoitSelectPurpose::PURIFIER_NIGHTLIGHT_MODE){
+    if (value == "Off") {
+      this->parent_->send_command(LevoitCommand{.payloadType = LevoitPayloadType::SET_NIGHTLIGHT,
+                                                .packetType = LevoitPacketType::SEND_MESSAGE,
+                                                .payload = {0x00, 0x00,0x00}});
+    } else if (value == "Low") {
+      this->parent_->send_command(LevoitCommand{.payloadType = LevoitPayloadType::SET_NIGHTLIGHT,
+                                                .packetType = LevoitPacketType::SEND_MESSAGE,
+                                                .payload = {0x00, 0x00,0x32}});
+    } else if (value == "High") {
+      this->parent_->send_command(LevoitCommand{.payloadType = LevoitPayloadType::SET_NIGHTLIGHT,
+                                                .packetType = LevoitPacketType::SEND_MESSAGE,
+                                                .payload = {0x00, 0x00,0x64}});
     }
   }
 }

@@ -9,7 +9,14 @@ static const char *const TAG = "levoit.switch";
 void LevoitSwitch::setup() {
   this->parent_->register_listener(LevoitPayloadType::STATUS_RESPONSE, [this](uint8_t *buf, size_t len) {
     if (this->purpose_ == DISPLAY_LOCK) {
-      bool currentDisplayLockState = buf[14];
+      bool currentDisplayLockState;
+      switch (this->parent_->device_model_) {
+        case LevoitDeviceModel::CORE_200S:
+          currentDisplayLockState = buf[11];
+          break;
+        default:
+          currentDisplayLockState = buf[14];
+      }
       this->publish_state(currentDisplayLockState);
     }
     if (this->purpose_ == MASTER_POWER) {

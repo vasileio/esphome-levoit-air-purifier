@@ -27,7 +27,7 @@ void Levoit::setup() {
   // we must be approaching mcu capacity
   // TODO: ideally there is some way in the protocol to determine wifi light status,
   // which would allow us to only send commands if needed
-  if (this->device_model_ != LevoitDeviceModel::CORE_400S) {
+  if (this->device_model_ == LevoitDeviceModel::CORE_300S) {
     this->set_interval("status", 5000, [this] {
       if (network::is_connected()) {
         if (remote_is_connected()) {
@@ -39,8 +39,8 @@ void Levoit::setup() {
         } else {
           // blink
           LevoitCommand statusRequest = {.payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
-                                         .packetType = LevoitPacketType::SEND_MESSAGE,
-                                         .payload = {0x00, 0x02, 0xF4, 0x01, 0xF4, 0x01, 0x00}};
+                                        .packetType = LevoitPacketType::SEND_MESSAGE,
+                                        .payload = {0x00, 0x02, 0xF4, 0x01, 0xF4, 0x01, 0x00}};
           this->send_command(statusRequest);
         }
       } else {
@@ -255,6 +255,8 @@ void Levoit::set_device_model(std::string model) {
     device_model_ = LevoitDeviceModel::CORE_300S;
   } else if (model == "core400s") {
     device_model_ = LevoitDeviceModel::CORE_400S;
+  } else if (model == "core200s") {
+    device_model_ = LevoitDeviceModel::CORE_200S;
   } else {
     ESP_LOGW(TAG, "Unknown device model: %s", model.c_str());
   }

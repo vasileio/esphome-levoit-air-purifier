@@ -22,6 +22,17 @@ void LevoitFan::setup() {
         this->speed = reportedManualFanSpeed;
 
         break;
+      case LevoitDeviceModel::CORE_200S:
+        //Core200s has no auto mode so only on fan speed
+        power = payloadData[4];
+        fanMode = payloadData[5];
+        reportedManualFanSpeed = payloadData[6];
+        currentFanSpeed = payloadData[6];
+
+        this->state = power == 0x01;
+        this->speed = reportedManualFanSpeed;
+
+        break;
 
       default:
         // original behavior for 300s; fan switch is being repurposed
@@ -48,7 +59,7 @@ fan::FanTraits LevoitFan::get_traits() {
       // 400s has 4 speeds
       return fan::FanTraits(false, true, false, 4);
     default:
-      // 300s has 3 speeds
+      // 200s, 300s has 3 speeds
       return fan::FanTraits(false, true, false, 3);
   }
 }
@@ -61,6 +72,12 @@ void LevoitFan::control(const fan::FanCall &call) {
 
     switch (this->parent_->device_model_) {
       case LevoitDeviceModel::CORE_400S:
+        // fan switch controls main power state
+        this->parent_->send_command(LevoitCommand{.payloadType = LevoitPayloadType::SET_POWER_STATE,
+                                                  .packetType = LevoitPacketType::SEND_MESSAGE,
+                                                  .payload = {0x00, newPowerState}});
+        break;
+      case LevoitDeviceModel::CORE_200S:
         // fan switch controls main power state
         this->parent_->send_command(LevoitCommand{.payloadType = LevoitPayloadType::SET_POWER_STATE,
                                                   .packetType = LevoitPacketType::SEND_MESSAGE,
@@ -96,6 +113,18 @@ void LevoitFan::control(const fan::FanCall &call) {
         targetSpeed = 1;
       }
     }
+    /*
+    // 200s-specific behavior
+    if (this->parent_->device_model_ == LevoitDeviceModel::CORE_200S) {
+      // if fan is off, we don't set speed
+      if (newPowerState == false) {
+        return;
+      }
+
+      if (targetSpeed == 0) {
+        targetSpeed = 1;
+      }
+    }*/
 
     this->parent_->send_command(LevoitCommand{.payloadType = LevoitPayloadType::SET_FAN_MANUAL,
                                               .packetType = LevoitPacketType::SEND_MESSAGE,

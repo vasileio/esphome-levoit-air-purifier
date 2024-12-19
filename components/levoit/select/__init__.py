@@ -8,7 +8,7 @@ from esphome.const import (
     CONF_ID
 )
 
-from .. import levoit_ns, CONF_LEVOIT_ID,Levoit
+from .. import levoit_ns, CONF_LEVOIT_ID, Levoit
 
 DEPENDENCIES = ["levoit"]
 CODEOWNERS = ["@acvigue"]

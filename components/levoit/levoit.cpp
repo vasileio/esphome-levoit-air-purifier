@@ -39,8 +39,8 @@ void Levoit::setup() {
         } else {
           // blink
           LevoitCommand statusRequest = {.payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
-                                        .packetType = LevoitPacketType::SEND_MESSAGE,
-                                        .payload = {0x00, 0x02, 0xF4, 0x01, 0xF4, 0x01, 0x00}};
+                                         .packetType = LevoitPacketType::SEND_MESSAGE,
+                                         .payload = {0x00, 0x02, 0xF4, 0x01, 0xF4, 0x01, 0x00}};
           this->send_command(statusRequest);
         }
       } else {

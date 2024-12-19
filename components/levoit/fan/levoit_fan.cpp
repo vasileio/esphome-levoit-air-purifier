@@ -113,18 +113,6 @@ void LevoitFan::control(const fan::FanCall &call) {
         targetSpeed = 1;
       }
     }
-    /*
-    // 200s-specific behavior
-    if (this->parent_->device_model_ == LevoitDeviceModel::CORE_200S) {
-      // if fan is off, we don't set speed
-      if (newPowerState == false) {
-        return;
-      }
-
-      if (targetSpeed == 0) {
-        targetSpeed = 1;
-      }
-    }*/
 
     this->parent_->send_command(LevoitCommand{.payloadType = LevoitPayloadType::SET_FAN_MANUAL,
                                               .packetType = LevoitPacketType::SEND_MESSAGE,

@@ -11,7 +11,8 @@ namespace levoit {
 
 enum LevoitSelectPurpose: uint8_t {
   PURIFIER_FAN_MODE,
-  PURIFIER_AUTO_MODE
+  PURIFIER_AUTO_MODE,
+  PURIFIER_NIGHTLIGHT_MODE,
 };
 
 class LevoitSelect : public select::Select, public Component {

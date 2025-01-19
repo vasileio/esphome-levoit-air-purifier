@@ -1,7 +1,7 @@
 # Levoit Air Purifier Integration for ESPHome
 
 ## Supported:
-- Levoit Core 200s (Untested)
+- Levoit Core 200s (Need Confirmation)
 - Core 300s (Tested)
 - Core 400s (Need Confirmation)
 
@@ -41,5 +41,6 @@ All contributions are welcome! Please open an issue or a PR.
 ## Contributors:
 
 Aiden (@acvigue) - Original code & Core300s support
-Ryan Lang (@ryan-lang) - Core200s support
+Ryan Lang (@ryan-lang) - Core400s support
+Havarius (@Havarius) - Core200s support
 Haydon (@haydonryan) - Documentation & testing

@@ -12,7 +12,7 @@ CODEOWNERS = ["@acvigue"]
 CONF_LEVOIT_ID = "levoit"
 CONF_LEVOIT_MODEL = "model"
 
-VALID_MODELS = ["core300s", "core400s"]
+VALID_MODELS = ["core200s","core300s", "core400s"]
 
 levoit_ns = cg.esphome_ns.namespace("levoit")
 Levoit = levoit_ns.class_("Levoit", cg.Component, uart.UARTDevice)

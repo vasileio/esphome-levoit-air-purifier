@@ -43,6 +43,9 @@ uart:
 levoit:
   id: levoit1
   model: core200s
+#  command_delay: 300 # default 300
+#  command_timeout: 200 # default 200
+#  status_poll_seconds: 0 # default 0, not needed on core200s
 
 fan:
   - platform: levoit

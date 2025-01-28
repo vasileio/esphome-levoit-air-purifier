@@ -541,7 +541,8 @@ void Levoit::set_request_state(uint32_t onMask, uint32_t offMask, bool aquireMut
 
       command_sync_();
 
-      xSemaphoreGive(stateChangeMutex_);
+      if (aquireMutex)
+        xSemaphoreGive(stateChangeMutex_);
     }
 }
 

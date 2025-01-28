@@ -26,7 +26,7 @@ enum class LevoitPayloadType : uint32_t {
   SET_POWER_STATE = 0x0100A0,
   SET_SCREEN_BRIGHTNESS = 0x0105A1,
   SET_FILTER_LED = 0x01E2A5,
-  RESET_FILTER = 0x01E4A5,
+  SET_RESET_FILTER = 0x01E4A5,
   TIMER_STATUS = 0x0165A2,
   SET_TIMER_TIME = 0x0164A2,
   TIMER_START_OR_CLEAR = 0x0166A2,
@@ -54,7 +54,8 @@ enum class LevoitState : uint32_t {
   PM25_NAN = 131072,
   PM25_CHANGE = 262144,
   WIFI_CONNECTED = 524288,
-  HA_CONNECTED = 1048576
+  HA_CONNECTED = 1048576,
+  FILTER_RESET = 2097152
 };
 
 struct LevoitStateListener {
@@ -112,6 +113,7 @@ class Levoit : public Component, public uart::UARTDevice {
   QueueHandle_t tx_queue_;
   SemaphoreHandle_t stateChangeMutex_;
   TaskHandle_t procTxQueueTaskHandle_;
+  TaskHandle_t maintTaskHandle_;
   uint32_t current_state_  = 0;
   uint32_t req_on_state_ = 0;
   uint32_t req_off_state_ = 0;

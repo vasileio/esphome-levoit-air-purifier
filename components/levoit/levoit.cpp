@@ -46,100 +46,85 @@ void Levoit::setup() {
 
   xTaskCreatePinnedToCore(
       [](void *param) { static_cast<Levoit *>(param)->maint_task_(); },
-      "MaintTask", 2048, this, 1, NULL, tskNO_AFFINITY);
+      "MaintTask", 4096, this, 2, &maintTaskHandle_, tskNO_AFFINITY);
 
-  bool wifiConnected = !current_state_ & static_cast<uint32_t>(LevoitState::DISPLAY) && wifi::global_wifi_component->is_connected();
-  bool haConnected = wifiConnected && esphome::api::global_api_server != nullptr && api::global_api_server->is_connected();
-
-  if (wifiConnected) {
-    if (haConnected) {
-      send_command_(LevoitCommand {
-        .payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
-        .packetType = LevoitPacketType::SEND_MESSAGE,
-        .payload = {0x00, 0x01, 0x7D, 0x00, 0x7D, 0x00, 0x00}
-      }); 
-    } else {
-      send_command_(LevoitCommand {
-        .payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
-        .packetType = LevoitPacketType::SEND_MESSAGE,
-        .payload = {0x00, 0x02, 0xF4, 0x01, 0xF4, 0x01, 0x00}
-      });
-    }
-  } else {
-    send_command_(LevoitCommand {
-      .payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
-      .packetType = LevoitPacketType::SEND_MESSAGE,
-      .payload = {0x00, 0x00, 0xF4, 0x01, 0xF4, 0x01, 0x00}
-    });
-  }
 }
 
 void Levoit::maint_task_() {
-  // non-packet status updates
-  uint32_t reqOn;
-  uint32_t reqOff;
-  uint32_t statusPoll = 0;
+  uint32_t lastStatusPollTime = xTaskGetTickCount();
 
   while (true) {
-    vTaskDelay(pdMS_TO_TICKS(1000));
-    reqOn = req_off_state_; reqOff = req_off_state_;
-
-    bool wifiConnected = !current_state_ & static_cast<uint32_t>(LevoitState::DISPLAY) && wifi::global_wifi_component->is_connected();
-    bool haConnected = wifiConnected && esphome::api::global_api_server != nullptr && api::global_api_server->is_connected();
-
-    // wifi status led
-    if (wifiConnected && !(current_state_ & static_cast<uint32_t>(LevoitState::WIFI_CONNECTED)))
-      reqOn |= static_cast<uint32_t>(LevoitState::WIFI_CONNECTED);
-    else if (!wifiConnected && current_state_ & static_cast<uint32_t>(LevoitState::WIFI_CONNECTED))
-      reqOff &= ~static_cast<uint32_t>(LevoitState::WIFI_CONNECTED);
-
-    if (haConnected && !(current_state_ & static_cast<uint32_t>(LevoitState::HA_CONNECTED)))
-      reqOn |= static_cast<uint32_t>(LevoitState::HA_CONNECTED);
-    else if (!haConnected && current_state_ & static_cast<uint32_t>(LevoitState::HA_CONNECTED))
-      reqOff &= ~static_cast<uint32_t>(LevoitState::HA_CONNECTED);
-
-    if (reqOn || reqOff) {
+    // wait with timeout for notification
+    while (ulTaskNotifyTake(pdFALSE, pdMS_TO_TICKS(1000)) > 0) {
       if (xSemaphoreTake(stateChangeMutex_, portMAX_DELAY) == pdTRUE) {
-        // WIFI Status Light
-        if (reqOn & static_cast<uint32_t>(LevoitState::HA_CONNECTED)) {
-          // Solid
-          send_command_(LevoitCommand {
-            .payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
-            .packetType = LevoitPacketType::SEND_MESSAGE,
-            .payload = {0x00, 0x01, 0x7D, 0x00, 0x7D, 0x00, 0x00}
-          });
-          current_state_ |= static_cast<uint32_t>(LevoitState::HA_CONNECTED);
-        } else if (reqOn & static_cast<uint32_t>(LevoitState::WIFI_CONNECTED)) {
-          // Blink
-          send_command_(LevoitCommand {
-            .payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
-            .packetType = LevoitPacketType::SEND_MESSAGE,
-            .payload = {0x00, 0x02, 0xF4, 0x01, 0xF4, 0x01, 0x00}
-          }); 
-          current_state_ |= static_cast<uint32_t>(LevoitState::WIFI_CONNECTED);
-        } else {
-          // off
-          send_command_(LevoitCommand {
-            .payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
-            .packetType = LevoitPacketType::SEND_MESSAGE,
-            .payload = {0x00, 0x00, 0xF4, 0x01, 0xF4, 0x01, 0x00}
-          });
-          current_state_ |= (static_cast<uint32_t>(LevoitState::HA_CONNECTED) + static_cast<uint32_t>(LevoitState::WIFI_CONNECTED));
-        }
-        set_bit_(current_state_, wifiConnected, LevoitState::WIFI_CONNECTED);
-        set_bit_(current_state_, haConnected, LevoitState::HA_CONNECTED);
-
+        command_sync_();
         xSemaphoreGive(stateChangeMutex_);
       }
     }
+    if (xSemaphoreTake(stateChangeMutex_, portMAX_DELAY) == pdTRUE) {
+      uint32_t previousState = current_state_;
+      uint32_t reqOn = req_off_state_; 
+      uint32_t reqOff = req_off_state_;
 
-    if (this->status_poll_seconds > 0 && statusPoll++ >= this->status_poll_seconds) {
+      bool wifiConnected = wifi::global_wifi_component->is_connected();
+      bool haConnected = wifiConnected && esphome::api::global_api_server != nullptr && api::global_api_server->is_connected();
+
+      set_bit_(current_state_, wifiConnected, LevoitState::WIFI_CONNECTED);
+      set_bit_(current_state_, haConnected, LevoitState::HA_CONNECTED);
+
+      if (previousState != current_state_) {
+        ESP_LOGV(TAG, "maint - State Changed from %u to %u", previousState, current_state_);
+
+        uint32_t removeBits = current_state_ & req_on_state_;
+        if (removeBits)
+          req_on_state_ &= ~removeBits;
+
+        removeBits = ~current_state_ & req_off_state_;
+        if (removeBits)
+            req_off_state_ &= ~removeBits;
+
+        uint32_t wifiLights = 
+          static_cast<uint32_t>(LevoitState::WIFI_CONNECTED) +
+          static_cast<uint32_t>(LevoitState::HA_CONNECTED) +
+          static_cast<uint32_t>(LevoitState::DISPLAY);
+
+        // check if lights need to be changed
+        if ((previousState & wifiLights) != (current_state_ & wifiLights)) {
+          if (current_state_ & static_cast<uint32_t>(LevoitState::DISPLAY) && (wifiConnected || haConnected)) {
+            if (haConnected) {
+              // send solid
+              send_command_(LevoitCommand {
+                .payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
+                .packetType = LevoitPacketType::SEND_MESSAGE,
+                .payload = {0x00, 0x01, 0x7D, 0x00, 0x7D, 0x00, 0x00}
+              });            
+            } else {
+              // Blink
+              send_command_(LevoitCommand {
+                .payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
+                .packetType = LevoitPacketType::SEND_MESSAGE,
+                .payload = {0x00, 0x02, 0xF4, 0x01, 0xF4, 0x01, 0x00}
+              }); 
+            }
+          } else {
+            // Off
+            send_command_(LevoitCommand {
+              .payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
+              .packetType = LevoitPacketType::SEND_MESSAGE,
+              .payload = {0x00, 0x00, 0xF4, 0x01, 0xF4, 0x01, 0x00}
+            });
+          }
+        }
+      }
+      xSemaphoreGive(stateChangeMutex_);
+    }
+    if (this->status_poll_seconds > 0 && (xTaskGetTickCount() - lastStatusPollTime) >= pdMS_TO_TICKS(this->status_poll_seconds * 1000)) {
       send_command_(LevoitCommand {
         .payloadType = LevoitPayloadType::STATUS_REQUEST,
         .packetType = LevoitPacketType::SEND_MESSAGE,
         .payload = {0x00}
       });
-      statusPoll = 0;
+      lastStatusPollTime = xTaskGetTickCount();
     }
   }
 }
@@ -209,28 +194,24 @@ void Levoit::command_sync_() {
           .packetType = LevoitPacketType::SEND_MESSAGE,
           .payload = {0x00, 0x00, 0x01, 0x01}
         });
-        req_on_state_ &= ~static_cast<uint32_t>(LevoitState::FAN_SPEED1);
       } else if (req_on_state_ & static_cast<uint32_t>(LevoitState::FAN_SPEED2)) {
         send_command_(LevoitCommand {
           .payloadType = LevoitPayloadType::SET_FAN_MANUAL,
           .packetType = LevoitPacketType::SEND_MESSAGE,
           .payload = {0x00, 0x00, 0x01, 0x02}
         });
-        req_on_state_ &= ~static_cast<uint32_t>(LevoitState::FAN_SPEED2);
       } else if (req_on_state_ & static_cast<uint32_t>(LevoitState::FAN_SPEED3)) {
         send_command_(LevoitCommand {
           .payloadType = LevoitPayloadType::SET_FAN_MANUAL,
           .packetType = LevoitPacketType::SEND_MESSAGE,
           .payload = {0x00, 0x00, 0x01, 0x03}
         });
-        req_on_state_ &= ~static_cast<uint32_t>(LevoitState::FAN_SPEED3);
       } else if (req_on_state_ & static_cast<uint32_t>(LevoitState::FAN_SPEED4)) {
         send_command_(LevoitCommand {
           .payloadType = LevoitPayloadType::SET_FAN_MANUAL,
           .packetType = LevoitPacketType::SEND_MESSAGE,
           .payload = {0x00, 0x00, 0x01, 0x04}
         });
-        req_on_state_ &= ~static_cast<uint32_t>(LevoitState::FAN_SPEED4);
       }
     }
 
@@ -276,6 +257,17 @@ void Levoit::command_sync_() {
       });   
     }
 
+    // Filter Reset
+    if (req_on_state_ & static_cast<uint32_t>(LevoitState::FILTER_RESET)) {
+      send_command_(LevoitCommand {
+        .payloadType = LevoitPayloadType::SET_RESET_FILTER,
+        .packetType = LevoitPacketType::SEND_MESSAGE,
+        .payload = {0x00}
+      });
+      // setting that its done, not sure how to check filter status yet
+      current_state_ &= ~static_cast<uint32_t>(LevoitState::FILTER_RESET);
+    }
+
     if (req_off_state_ & static_cast<uint32_t>(LevoitState::AIR_QUALITY_CHANGE))
       current_state_ &= ~static_cast<uint32_t>(LevoitState::AIR_QUALITY_CHANGE);
 
@@ -284,7 +276,7 @@ void Levoit::command_sync_() {
 
     if (req_off_state_ & static_cast<uint32_t>(LevoitState::PM25_CHANGE))
       current_state_ &= ~static_cast<uint32_t>(LevoitState::PM25_CHANGE);
-   
+
   }
 }
 
@@ -499,9 +491,8 @@ void Levoit::handle_payload_(LevoitPayloadType type, uint8_t *payload, size_t le
         }
         ESP_LOGV(TAG, "Current State: %u, Requested On: %u, Request Off: %u", current_state_, req_on_state_, req_off_state_);
       }
-      command_sync_();
-
       xSemaphoreGive(stateChangeMutex_);
+      xTaskNotifyGive(maintTaskHandle_);
     }
   }
 }
@@ -531,10 +522,10 @@ void Levoit::set_request_state(uint32_t onMask, uint32_t offMask, bool aquireMut
 
       ESP_LOGV(TAG, "set_request_state - Current State: %u, Requested On: %u, Request Off: %u", current_state_, req_on_state_, req_off_state_);
 
-      command_sync_();
-
       if (aquireMutex)
         xSemaphoreGive(stateChangeMutex_);
+
+      xTaskNotifyGive(maintTaskHandle_);
     }
 }
 

@@ -30,7 +30,7 @@ void LevoitSwitch::dump_config() {
 }
 
 uint32_t LevoitSwitch::get_mask_(LevoitSwitchPurpose purpose) {
-  switch (this->purpose_) {
+  switch (purpose) {
     case DISPLAY_LOCK: { return(static_cast<uint32_t>(LevoitState::DISPLAY_LOCK)); }
     case MASTER_POWER: { return(static_cast<uint32_t>(LevoitState::POWER)); }
     case DISPLAY_ON: { return(static_cast<uint32_t>(LevoitState::DISPLAY)); }

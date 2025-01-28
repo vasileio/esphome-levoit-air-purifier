@@ -48,12 +48,8 @@ void Levoit::setup() {
       [](void *param) { static_cast<Levoit *>(param)->maint_task_(); },
       "MaintTask", 2048, this, 1, NULL, tskNO_AFFINITY);
 
-  bool wifiConnected = wifi::global_wifi_component->is_connected();
-  bool haConnected = wifiConnected && api::global_api_server->is_connected();
-
-  if (haConnected && esphome::api::global_api_server != nullptr) {
-    haConnected = esphome::api::global_api_server->is_connected();
-  }
+  bool wifiConnected = !current_state_ & static_cast<uint32_t>(LevoitState::DISPLAY) && wifi::global_wifi_component->is_connected();
+  bool haConnected = wifiConnected && esphome::api::global_api_server != nullptr && api::global_api_server->is_connected();
 
   if (wifiConnected) {
     if (haConnected) {
@@ -89,11 +85,7 @@ void Levoit::maint_task_() {
     reqOn = req_off_state_; reqOff = req_off_state_;
 
     bool wifiConnected = !current_state_ & static_cast<uint32_t>(LevoitState::DISPLAY) && wifi::global_wifi_component->is_connected();
-    bool haConnected = wifiConnected && api::global_api_server->is_connected();
-
-    if (haConnected && esphome::api::global_api_server != nullptr) {
-      haConnected = esphome::api::global_api_server->is_connected();
-    }
+    bool haConnected = wifiConnected && esphome::api::global_api_server != nullptr && api::global_api_server->is_connected();
 
     // wifi status led
     if (wifiConnected && !(current_state_ & static_cast<uint32_t>(LevoitState::WIFI_CONNECTED)))

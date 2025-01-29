@@ -55,7 +55,10 @@ enum class LevoitState : uint32_t {
   PM25_CHANGE = 262144,
   WIFI_CONNECTED = 524288,
   HA_CONNECTED = 1048576,
-  FILTER_RESET = 2097152
+  FILTER_RESET = 2097152,
+  WIFI_LIGHT_SOLID = 4194304,
+  WIFI_LIGHT_FLASH = 8388608,
+  WIFI_LIGHT_OFF = 16777216
 };
 
 struct LevoitStateListener {
@@ -114,7 +117,7 @@ class Levoit : public Component, public uart::UARTDevice {
   SemaphoreHandle_t stateChangeMutex_;
   TaskHandle_t procTxQueueTaskHandle_;
   TaskHandle_t maintTaskHandle_;
-  uint32_t current_state_  = 0;
+  uint32_t current_state_ = 0;
   uint32_t req_on_state_ = 0;
   uint32_t req_off_state_ = 0;
   uint32_t command_delay_;

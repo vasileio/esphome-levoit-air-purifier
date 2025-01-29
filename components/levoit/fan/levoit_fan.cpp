@@ -72,7 +72,7 @@ void LevoitFan::control(const fan::FanCall &call) {
       case LevoitDeviceModel::CORE_400S:
       case LevoitDeviceModel::CORE_200S:
         if (newPowerState) {
-          onMask |= static_cast<uint32_t>(LevoitState::POWER);
+          onMask |= static_cast<uint32_t>(LevoitState::POWER) + static_cast<uint32_t>(LevoitState::FAN_MANUAL);
           offMask &= ~static_cast<uint32_t>(LevoitState::POWER);
         } else {
           onMask &= ~static_cast<uint32_t>(LevoitState::POWER);
@@ -100,7 +100,7 @@ void LevoitFan::control(const fan::FanCall &call) {
         offMask |= static_cast<uint32_t>(LevoitState::POWER);
         break;
       case 1:
-        onMask |= static_cast<uint32_t>(LevoitState::FAN_SPEED1);
+        onMask |= static_cast<uint32_t>(LevoitState::FAN_SPEED1) + static_cast<uint32_t>(LevoitState::FAN_MANUAL);
         offMask &= ~(
           static_cast<uint32_t>(LevoitState::FAN_SPEED2) +
           static_cast<uint32_t>(LevoitState::FAN_SPEED3) +
@@ -108,7 +108,7 @@ void LevoitFan::control(const fan::FanCall &call) {
         );
         break;
       case 2:
-        onMask |= static_cast<uint32_t>(LevoitState::FAN_SPEED2);
+        onMask |= static_cast<uint32_t>(LevoitState::FAN_SPEED2) + static_cast<uint32_t>(LevoitState::FAN_MANUAL);
         offMask &= ~(
           static_cast<uint32_t>(LevoitState::FAN_SPEED1) +
           static_cast<uint32_t>(LevoitState::FAN_SPEED3) +
@@ -116,7 +116,7 @@ void LevoitFan::control(const fan::FanCall &call) {
         );
         break;
       case 3:
-        onMask |= static_cast<uint32_t>(LevoitState::FAN_SPEED3);
+        onMask |= static_cast<uint32_t>(LevoitState::FAN_SPEED3) + static_cast<uint32_t>(LevoitState::FAN_MANUAL);
         offMask &= ~(
           static_cast<uint32_t>(LevoitState::FAN_SPEED1) +
           static_cast<uint32_t>(LevoitState::FAN_SPEED2) +
@@ -124,7 +124,7 @@ void LevoitFan::control(const fan::FanCall &call) {
         );
         break;
       case 4:
-        onMask |= static_cast<uint32_t>(LevoitState::FAN_SPEED4);
+        onMask |= static_cast<uint32_t>(LevoitState::FAN_SPEED4) + static_cast<uint32_t>(LevoitState::FAN_MANUAL);;
         offMask &= ~(
           static_cast<uint32_t>(LevoitState::FAN_SPEED1) +
           static_cast<uint32_t>(LevoitState::FAN_SPEED2) +

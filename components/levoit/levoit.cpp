@@ -46,7 +46,7 @@ void Levoit::setup() {
 
   xTaskCreatePinnedToCore(
       [](void *param) { static_cast<Levoit *>(param)->maint_task_(); },
-      "MaintTask", 4096, this, 2, &maintTaskHandle_, tskNO_AFFINITY);
+      "MaintTask", 4096, this, 1, &maintTaskHandle_, tskNO_AFFINITY);
 
 }
 
@@ -63,41 +63,38 @@ void Levoit::maint_task_() {
     }
     if (xSemaphoreTake(stateChangeMutex_, portMAX_DELAY) == pdTRUE) {
       uint32_t previousState = current_state_;
-      uint32_t reqOn = req_off_state_; 
-      uint32_t reqOff = req_off_state_;
 
       bool wifiConnected = wifi::global_wifi_component->is_connected();
       bool haConnected = wifiConnected && esphome::api::global_api_server != nullptr && api::global_api_server->is_connected();
+      bool wifiSolid = wifiConnected && haConnected;
+      bool wifiFlash = wifiConnected && !haConnected;
+      bool wifiOff = !wifiConnected && !haConnected;
 
       set_bit_(current_state_, wifiConnected, LevoitState::WIFI_CONNECTED);
       set_bit_(current_state_, haConnected, LevoitState::HA_CONNECTED);
+      set_bit_(current_state_, wifiSolid, LevoitState::WIFI_LIGHT_SOLID);
+      set_bit_(current_state_, wifiFlash, LevoitState::WIFI_LIGHT_FLASH);
+      set_bit_(current_state_, wifiOff, LevoitState::WIFI_LIGHT_OFF);
+      
 
       if (previousState != current_state_) {
-        ESP_LOGV(TAG, "maint - State Changed from %u to %u", previousState, current_state_);
-
-        uint32_t removeBits = current_state_ & req_on_state_;
-        if (removeBits)
-          req_on_state_ &= ~removeBits;
-
-        removeBits = ~current_state_ & req_off_state_;
-        if (removeBits)
-            req_off_state_ &= ~removeBits;
+        ESP_LOGV(TAG, "State Changed from %u to %u", previousState, current_state_);
 
         uint32_t wifiLights = 
-          static_cast<uint32_t>(LevoitState::WIFI_CONNECTED) +
-          static_cast<uint32_t>(LevoitState::HA_CONNECTED) +
-          static_cast<uint32_t>(LevoitState::DISPLAY);
+          static_cast<uint32_t>(LevoitState::WIFI_LIGHT_SOLID) +
+          static_cast<uint32_t>(LevoitState::WIFI_LIGHT_FLASH) +
+          static_cast<uint32_t>(LevoitState::WIFI_LIGHT_OFF);
 
         // check if lights need to be changed
         if ((previousState & wifiLights) != (current_state_ & wifiLights)) {
-          if (current_state_ & static_cast<uint32_t>(LevoitState::DISPLAY) && (wifiConnected || haConnected)) {
+          if (wifiConnected || haConnected) {
             if (haConnected) {
               // send solid
               send_command_(LevoitCommand {
                 .payloadType = LevoitPayloadType::SET_WIFI_STATUS_LED,
                 .packetType = LevoitPacketType::SEND_MESSAGE,
                 .payload = {0x00, 0x01, 0x7D, 0x00, 0x7D, 0x00, 0x00}
-              });            
+              });
             } else {
               // Blink
               send_command_(LevoitCommand {
@@ -116,6 +113,15 @@ void Levoit::maint_task_() {
           }
         }
       }
+
+      uint32_t removeBits = current_state_ & req_on_state_;
+      if (removeBits)
+        req_on_state_ &= ~removeBits;
+
+      removeBits = ~current_state_ & req_off_state_;
+      if (removeBits)
+          req_off_state_ &= ~removeBits;
+
       xSemaphoreGive(stateChangeMutex_);
     }
     if (this->status_poll_seconds > 0 && (xTaskGetTickCount() - lastStatusPollTime) >= pdMS_TO_TICKS(this->status_poll_seconds * 1000)) {
@@ -262,7 +268,7 @@ void Levoit::command_sync_() {
       send_command_(LevoitCommand {
         .payloadType = LevoitPayloadType::SET_RESET_FILTER,
         .packetType = LevoitPacketType::SEND_MESSAGE,
-        .payload = {0x00}
+        .payload = {0x00, 0x00}
       });
       // setting that its done, not sure how to check filter status yet
       current_state_ &= ~static_cast<uint32_t>(LevoitState::FILTER_RESET);
@@ -309,6 +315,7 @@ void Levoit::dump_config() {
     ESP_LOGCONFIG(TAG, "Levoit!"); 
     ESP_LOGCONFIG(TAG, "  Command Delay: %d ms", this->command_delay_);
     ESP_LOGCONFIG(TAG, "  Command Timeout: %d ms", this->command_timeout_);
+    ESP_LOGCONFIG(TAG, "  Status Poll Seconds: %d ms", this->status_poll_seconds);
 }
 
 bool Levoit::validate_message_() {

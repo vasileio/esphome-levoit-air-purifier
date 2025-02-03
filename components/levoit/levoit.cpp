@@ -315,7 +315,7 @@ void Levoit::dump_config() {
     ESP_LOGCONFIG(TAG, "Levoit!"); 
     ESP_LOGCONFIG(TAG, "  Command Delay: %d ms", this->command_delay_);
     ESP_LOGCONFIG(TAG, "  Command Timeout: %d ms", this->command_timeout_);
-    ESP_LOGCONFIG(TAG, "  Status Poll Seconds: %d ms", this->status_poll_seconds);
+    ESP_LOGCONFIG(TAG, "  Status Poll Seconds: %d s", this->status_poll_seconds);
 }
 
 bool Levoit::validate_message_() {

@@ -26,7 +26,7 @@ void LevoitFan::setup() {
     [this](uint32_t currentBits) {
       bool powerState = (currentBits & powerMask) == powerMask;
 
-      this->state = currentBits & powerState;
+      this->state = currentBits && powerState;
 
       ESP_LOGI(TAG, "powerState: %d, currentBits: %d, powerMask: %d, state: %d", powerState, currentBits, powerMask, this->state);
       uint8_t newSpeed;

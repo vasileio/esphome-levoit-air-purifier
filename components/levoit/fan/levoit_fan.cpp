@@ -61,6 +61,7 @@ void LevoitFan::control(const fan::FanCall &call) {
     
     switch (this->parent_->device_model_) {
       case LevoitDeviceModel::CORE_400S:
+      case LevoitDeviceModel::CORE_300S:
       case LevoitDeviceModel::CORE_200S:
         if (newPowerState) {
           onMask |= static_cast<uint32_t>(LevoitState::POWER) + static_cast<uint32_t>(LevoitState::FAN_MANUAL);

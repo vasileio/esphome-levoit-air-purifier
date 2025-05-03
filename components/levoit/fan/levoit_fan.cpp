@@ -28,6 +28,7 @@ void LevoitFan::setup() {
 
       this->state = currentBits & powerState;
 
+      ESP_LOGI(TAG, "powerState: %d, currentBits: %d, powerMask: %d, state: %d", powerState, currentBits, powerMask, this->state);
       uint8_t newSpeed;
 
       if (currentBits & static_cast<uint32_t>(LevoitState::FAN_SPEED1))

@@ -17,7 +17,7 @@ void LevoitFan::setup() {
       break;
     default:
       //represensts fan mode
-      powerMask |= static_cast<uint32_t>(LevoitState::FAN_MANUAL);
+      powerMask |= (static_cast<uint32_t>(LevoitState::POWER) + static_cast<uint32_t>(LevoitState::FAN_MANUAL));
   }
 
   listenMask |= powerMask;
@@ -28,7 +28,7 @@ void LevoitFan::setup() {
 
       this->state = currentBits && powerState;
 
-      ESP_LOGI(TAG, "powerState: %d, currentBits: %d, powerMask: %d, state: %d", powerState, currentBits, powerMask, this->state);
+      ESP_LOGI(TAG, "a powerState: %d, currentBits: %d, powerMask: %d, state: %d", powerState, currentBits, powerMask, this->state);
       uint8_t newSpeed;
 
       if (currentBits & static_cast<uint32_t>(LevoitState::FAN_SPEED1))

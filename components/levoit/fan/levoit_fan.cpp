@@ -9,16 +9,7 @@ static const char *const TAG = "levoit.fan";
 void LevoitFan::setup() {
   uint32_t listenMask = this->parent_->fanChangeMask;
 
-  switch (this->parent_->device_model_) {
-    // represents power mode
-    case LevoitDeviceModel::CORE_400S:
-    case LevoitDeviceModel::CORE_200S:
-      powerMask |= (static_cast<uint32_t>(LevoitState::POWER) + static_cast<uint32_t>(LevoitState::FAN_MANUAL));
-      break;
-    default:
-      //represensts fan mode
-      powerMask |= (static_cast<uint32_t>(LevoitState::POWER) + static_cast<uint32_t>(LevoitState::FAN_MANUAL));
-  }
+  powerMask |= (static_cast<uint32_t>(LevoitState::POWER) + static_cast<uint32_t>(LevoitState::FAN_MANUAL));
 
   listenMask |= powerMask;
 
@@ -26,9 +17,8 @@ void LevoitFan::setup() {
     [this](uint32_t currentBits) {
       bool powerState = (currentBits & powerMask) == powerMask;
 
-      this->state = currentBits && powerState;
+      this->state = powerState;
 
-      ESP_LOGI(TAG, "a powerState: %d, currentBits: %d, powerMask: %d, state: %d", powerState, currentBits, powerMask, this->state);
       uint8_t newSpeed;
 
       if (currentBits & static_cast<uint32_t>(LevoitState::FAN_SPEED1))

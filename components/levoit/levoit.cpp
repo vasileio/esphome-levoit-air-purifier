@@ -447,15 +447,15 @@ void Levoit::handle_payload_(LevoitPayloadType type, uint8_t *payload, size_t le
         
         switch (this->device_model_) {
           case LevoitDeviceModel::CORE_200S:
-          pm25_value = raw_value / 10000;
-          break;
+            new_pm25Value = raw_value / 10000;
+            break;
 
           case LevoitDeviceModel::UNKNOWN:
           case LevoitDeviceModel::CORE_300S:
           case LevoitDeviceModel::CORE_400S:
           default:
-            pm25_value = raw_value * 10;
-            break;
+              new_pm25Value = raw_value * 10;
+              break;
         }
         
         if (new_pm25Value != pm25_value) {

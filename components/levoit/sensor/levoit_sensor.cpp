@@ -26,7 +26,11 @@ void LevoitSensor::setup() {
             this->publish_state(NAN);
             this->parent_->set_request_state(0, static_cast<uint32_t>(LevoitState::PM25_NAN), false);
           } else {
-            this->publish_state(this->parent_->pm25_value);
+            uint16_t integer_part = this->parent_->pm25_value / 10;
+            uint16_t decimal_part = this->parent_->pm25_value % 10;
+            float pm25Publish = integer_part + (decimal_part / 10.0);
+
+            this->publish_state(pm25Publish);
             this->parent_->set_request_state(0, static_cast<uint32_t>(LevoitState::PM25_CHANGE), false);
           }
         }

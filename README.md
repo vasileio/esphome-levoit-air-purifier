@@ -3,7 +3,7 @@
 ## Supported:
 - Levoit Core 200s (Need Confirmation)
 - Core 300s (Tested)
-- Core 400s (Need Confirmation)
+- Core 400s (Tested, thank you @SeveranExp)
 
 ## Disassembly
 For details on the teardown please read the [blog post](https://vigue.me/posts/levoit-air-purifier-esphome-conversion)
